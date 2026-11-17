@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timepass Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --bg-deep: #0a0e17;
+      --bg-elevated: #111827;
+      --bg-card: #1a2233;
+      --fg-primary: #f1f5f9;
+      --fg-muted: #64748b;
+      --fg-subtle: #334155;
+
+      --accent-cyan: #06b6d4;
+      --accent-cyan-dim: #0891b2;
+      --accent-amber: #fbbf24;
+      --accent-amber-dim: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-emerald-dim: #059669;
+      --accent-rose: #f43f5e;
+      --accent-rose-dim: #e11d48;
+      --accent-violet: #a855f7;
+      --accent-violet-dim: #9333ea;
+
+      --border-subtle: #1e293b;
+      --border-hover: #334155;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+      --shadow-glow-cyan: 0 0 24px rgba(6,182,212,0.3);
+      --shadow-glow-amber: 0 0 24px rgba(251,191,36,0.3);
+      --shadow-glow-emerald: 0 0 24px rgba(16,185,129,0.3);
+      --shadow-glow-rose: 0 0 24px rgba(244,63,94,0.3);
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --transition-fast: 120ms ease-out;
+      --transition-base: 200ms ease-out;
+      --transition-slow: 350ms ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --transition-fast: 0ms;
+        --transition-base: 0ms;
+        --transition-slow: 0ms;
+      }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-display);
+      background: var(--bg-deep);
+      color: var(--fg-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Subtle animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(6,182,212,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 90%, rgba(168,85,247,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(251,191,36,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle grid pattern overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(100,116,139,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h1, h2, h3, h4 { font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+
+    .display-xl { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; }
+    .display-lg { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; }
+    .display-md { font-size: clamp(1.25rem, 2.5vw, 1.75rem); font-weight: 600; }
+    .display-sm { font-size: clamp(1rem, 1.5vw, 1.25rem); font-weight: 500; }
+
+    .body-lg { font-size: 1.125rem; }
+    .body { font-size: 1rem; }
+    .body-sm { font-size: 0.875rem; }
+    .body-xs { font-size: 0.75rem; }
+
+    .mono { font-family: var(--font-mono); }
+    .text-muted { color: var(--fg-muted); }
+    .text-subtle { color: var(--fg-subtle); }
+
+    /* ===== LAYOUT ===== */
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section { padding: 4rem 0; }
+    .section-compact { padding: 2.5rem 0; }
+
+    /* ===== COMPONENTS ===== */
+
+    /* Button System */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent-cyan);
+      outline-offset: 2px;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dim) 100%);
+      color: var(--bg-deep);
+      box-shadow: var(--shadow-md), var(--shadow-glow-cyan);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg), var(--shadow-glow-cyan);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--fg-primary);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-elevated);
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg-muted);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      color: var(--fg-primary);
+      background: rgba(100,116,139,0.1);
+    }
+
+    .btn-lg { padding: 1rem 2rem; font-size: 1rem; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .btn-full { width: 100%; }
+
+    /* Card System */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all var(--transition-base);
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-md);
+    }
+    .card-interactive:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Game Card */
+    .game-card {
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1rem;
+      min-height: 200px;
+    }
+    .game-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .game-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .game-icon-cyan { background: rgba(6,182,212,0.15); color: var(--accent-cyan); }
+    .game-icon-amber { background: rgba(251,191,36,0.15); color: var(--accent-amber); }
+    .game-icon-emerald { background: rgba(16,185,129,0.15); color: var(--accent-emerald); }
+    .game-icon-rose { background: rgba(244,63,94,0.15); color: var(--accent-rose); }
+    .game-icon-violet { background: rgba(168,85,247,0.15); color: var(--accent-violet); }
+
+    .game-title { font-size: 1.125rem; font-weight: 600; }
+    .game-desc { color: var(--fg-muted); font-size: 0.875rem; line-height: 1.5; flex: 1; }
+    .game-stats { display: flex; gap: 1rem; margin-top: 0.5rem; }
+    .stat { display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: var(--fg-subtle); }
+    .stat-value { font-family: var(--font-mono); font-weight: 600; color: var(--fg-primary); }
+
+    /* Score Display */
+    .score-display {
+      font-family: var(--font-mono);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      padding: 2rem 0 1rem;
+      position: relative;
+      z-index: 10;
+    }
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .logo-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-violet) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    .logo-text { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+
+    .header-stats {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .header-stat { text-align: right; }
+    .header-stat-value { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; color: var(--accent-cyan); }
+    .header-stat-label { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-subtle); }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 3rem 0 4rem;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(6,182,212,0.1);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 1.5rem;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero-title { margin-bottom: 1rem; }
+    .hero-title .accent { background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-amber) 50%, var(--accent-violet) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero-subtitle { max-width: 600px; margin: 0 auto 2rem; color: var(--fg-muted); font-size: 1.125rem; }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ===== GAMES GRID ===== */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* ===== MODAL / GAME OVERLAY ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,14,23,0.95);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-slow);
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal {
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95) translateY(20px);
+      transition: all var(--transition-slow);
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .modal-title { font-size: 1.25rem; font-weight: 600; }
+    .modal-close {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--fg-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+    .modal-close:hover { background: var(--bg-card); border-color: var(--border-hover); color: var(--fg-primary); }
+    .modal-body { padding: 1.5rem; }
+    .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1.5rem; border-top: 1px solid var(--border-subtle); }
+
+    /* ===== SPECIFIC GAME STYLES ===== */
+
+    /* Reaction Game */
+    .reaction-area {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+      border-radius: var(--radius-lg);
+      border: 3px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+    .reaction-area.waiting { background: var(--bg-card); border-color: var(--accent-amber); }
+    .reaction-area.ready { background: var(--accent-emerald); border-color: var(--accent-emerald); cursor: pointer; }
+    .reaction-area.clicked { background: var(--accent-rose); border-color: var(--accent-rose); }
+    .reaction-area::before {
+      content: attr(data-text);
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.25rem;
+      color: var(--fg-muted);
+      transition: all var(--transition-base);
+    }
+    .reaction-area.waiting::before { content: 'Wait for green...'; }
+    .reaction-area.ready::before { content: 'CLICK!'; color: var(--bg-deep); font-size: 2rem; animation: flash 0.5s ease-in-out infinite; }
+    .reaction-area.clicked::before { content: attr(data-result); color: var(--bg-deep); }
+    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .reaction-history { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+    .reaction-item {
+      padding: 0.375rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+    .reaction-item.good { border-color: rgba(16,185,129,0.5); color: var(--accent-emerald); }
+    .reaction-item.ok { border-color: rgba(251,191,36,0.5); color: var(--accent-amber); }
+    .reaction-item.slow { border-color: rgba(244,63,94,0.5); color: var(--accent-rose); }
+    .reaction-item.early { border-color: rgba(168,85,247,0.5); color: var(--accent-violet); }
+
+    /* Memory Game */
+    .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; max-width: 360px; margin: 0 auto; }
+    .memory-tile {
+      aspect-ratio: 1;
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      transition: all var(--transition-fast);
+      user-select: none;
+      position: relative;
+    }
+    .memory-tile:hover:not(.matched):not(.flipped) { border-color: var(--accent-cyan); transform: scale(1.02); }
+    .memory-tile.flipped { background: var(--bg-elevated); border-color: var(--accent-cyan); }
+    .memory-tile.matched { background: rgba(16,185,129,0.15); border-color: var(--accent-emerald); cursor: default; }
+    .memory-tile.wrong { background: rgba(244,63,94,0.15); border-color: var(--accent-rose); animation: shake 0.4s ease-out; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .memory-tile .tile-value { opacity: 0; transform: scale(0.8); transition: all var(--transition-fast); }
+    .memory-tile.flipped .tile-value, .memory-tile.matched .tile-value { opacity: 1; transform: scale(1); }
+    .memory-info { display: flex; justify-content: space-between; margin-bottom: 1rem; font-family var(--font-mono); }
+    .memory-level { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    /* Click Speed Game */
+    .click-target {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--accent-cyan) 0%, var(--accent-cyan-dim) 70%);
+      margin: 0 auto 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--bg-deep);
+      box-shadow: var(--shadow-lg), var(--shadow-glow-cyan);
+      transition: all 50ms ease-out;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .click-target:active { transform: scale(0.92); }
+    .click-target::before {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      background: conic-gradient(from 0deg, transparent, var(--accent-amber), transparent);
+      animation: spin 2s linear infinite;
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+    .click-target.active::before { opacity: 1; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .click-timer { font-family: var(--font-mono); font-size: 3rem; font-weight: 700; text-align: center; color: var(--accent-amber); margin-bottom: 1rem; }
+    .click-cps { text-align: center; color: var(--fg-muted); font-size: 0.875rem; }
+
+    /* Number Guess Game */
+    .guess-input-group { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .guess-input {
+      width: 100%;
+      max-width: 180px;
+      padding: 1rem;
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--fg-primary);
+      text-align: center;
+      transition: all var(--transition-fast);
+    }
+    .guess-input:focus { outline: none; border-color: var(--accent-cyan); box-shadow: var(--shadow-glow-cyan); }
+    .guess-input::placeholder { color: var(--fg-subtle); }
+    .guess-feedback { min-height: 2.5rem; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+    .guess-feedback.high { color: var(--accent-rose); }
+    .guess-feedback.low { color: var(--accent-cyan); }
+    .guess-feedback.correct { color: var(--accent-emerald); }
+    .guess-history { display: flex; flex-wrap: wrap; gap: 0.375rem; justify-content: center; margin-top: 1rem; }
+    .guess-chip {
+      padding: 0.25rem 0.625rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+    }
+    .guess-chip.high { border-color: rgba(244,63,94,0.5); color: var(--accent-rose); }
+    .guess-chip.low { border-color: rgba(6,182,212,0.5); color: var(--accent-cyan); }
+    .guess-chip.correct { border-color: rgba(16,185,129,0.5); color: var(--accent-emerald); background: rgba(16,185,129,0.1); }
+
+    /* Whack Game */
+    .whack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; max-width: 320px; margin: 0 auto; }
+    .whack-hole {
+      aspect-ratio: 1;
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .whack-hole::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(180deg, transparent 0%, var(--bg-deep) 100%);
+    }
+    .whack-mole {
+      position: absolute;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 70%;
+      height: 70%;
+      background: var(--accent-rose);
+      border-radius: 50% 50% 40% 40%;
+      transition: transform 0.15s ease-out;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+    .whack-hole.active .whack-mole { transform: translateX(-50%) translateY(0); }
+    .whack-hole.hit .whack-mole { background: var(--accent-emerald); transform: translateX(-50%) translateY(100%); transition: transform 0.1s ease-in; }
+    .whack-score { text-align: center; margin-bottom: 1rem; }
+    .whack-time { font-family: var(--font-mono); font-size: 2.5rem; font-weight: 700; color: var(--accent-amber); }
+    .whack-hits { color: var(--fg-muted); font-size: 0.875rem; }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      padding: 2rem 0;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+      color: var(--fg-subtle);
+      font-size: 0.8125rem;
+    }
+
+    /* ===== UTILITIES ===== */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .gap-1 { gap: 0.5rem; }
+    .gap-2 { gap: 1rem; }
+    .text-center { text-align: center; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .mt-3 { margin-top: 1.5rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .mb-3 { margin-bottom: 1.5rem; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      .section { padding: 3rem 0; }
+      .header-content { flex-direction: column; text-align: center; }
+      .header-stats { justify-content: center; width: 100%; }
+      .header-stat { text-align: center; }
+      .memory-grid { grid-template-columns: repeat(2, 1fr); }
+      .whack-grid { grid-template-columns: repeat(2, 1fr); }
+      .btn { padding: 0.875rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header class="header" role="banner">
+    <div class="container">
+      <div class="header-content">
+        <a href="#" class="logo" aria-label="Timepass Arcade Home">
+          <span class="logo-mark" aria-hidden="true">🎮</span>
+          <span class="logo-text">Timepass Arcade</span>
+        </a>
+        <div class="header-stats" aria-label="Session statistics">
+          <div class="header-stat">
+            <div class="header-stat-value mono" id="totalGamesPlayed">0</div>
+            <div class="header-stat-label">Games Played</div>
+          </div>
+          <div class="header-stat">
+            <div class="header-stat-value mono" id="totalTimePlayed">0s</div>
+            <div class="header-stat-label">Time Spent</div>
+          </div>
+          <div class="header-stat">
+            <div class="header-stat-value mono" id="bestScores">—</div>
+            <div class="header-stat-label">Best Scores</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <main id="main" role="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <span class="hero-badge" aria-live="polite">
+          <span aria-hidden="true"></span>
+          5 Mini Games Ready
+        </span>
+        <h1 id="hero-title" class="display-xl hero-title">
+          Kill time.<br> <span class="accent">Have fun.</span>
+        </h1>
+        <p class="hero-subtitle">Quick, addictive micro-games that load instantly. No accounts, no ads, just pure timepass.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" onclick="openGame('reaction')">Try Reaction Test</button>
+          <button class="btn btn-secondary btn-lg" onclick="document.getElementById('games').scrollIntoView({behavior: 'smooth'})">View All Games</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GAMES GRID ===== -->
+    <section class="section" id="games" aria-labelledby="games-title">
+      <div class="container">
+        <header class="mb-3" style="text-align: center;">
+          <h2 id="games-title" class="display-lg mb-1">Pick Your Poison</h2>
+          <p class="text-muted body-lg">Each game tracks your best. Come back to beat it.</p>
+        </header>
+
+        <div class="games-grid" role="list">
+          <!-- Reaction Time -->
+          <article class="card card-interactive game-card" role="listitem" onclick="openGame('reaction')" tabindex="0" onkeydown="handleCardKeydown(event, 'reaction')">
+            <div class="game-card-header">
+              <div>
+                <h3 class="game-title">Reaction Time</h3>
+                <p class="game-desc">Wait for green, then click fast. Test your reflexes.</p>
+              </div>
+              <span class="game-icon game-icon-amber" aria-hidden="true">⚡</span>
+            </div>
+            <div class="game-stats">
+              <span class="stat"><span class="stat-value mono" id="reaction-best">—</span> ms best</span>
+              <span class="stat"><span class="stat-value mono" id="reaction-plays">0</span> plays</span>
+            </div>
+          </article>
+
+          <!-- Memory Game -->
+          <article class="card card-interactive game-card" role="listitem" onclick="openGame('memory')" tabindex="0" onkeydown="handleCardKeydown(event, 'memory')">
+            <div class="game-card-header">
+              <div>
+                <h3 class="game-title">Sequence Memory</h3>
+                <p class="game-desc">Watch the pattern, repeat it. How far can you go?</p>
+              </div>
+              <span class="game-icon game-icon-cyan" aria-hidden="true">🧠</span>
+            </div>
+            <div class="game-stats">
+              <span class="stat"><span class="stat-value mono" id="memory-best">—</span> level best</span>
+              <span class="stat"><span class="stat-value mono" id="memory-plays">0</span> plays</span>
+            </div>
+          </article>
+
+          <!-- Click Speed -->
+          <article class="card card-interactive game-card" role="listitem" onclick="openGame('clickspeed')" tabindex="0" onkeydown="handleCardKeydown(event, 'clickspeed')">
+            <div class="game-card-header">
+              <div>
+                <h3 class="game-title">Click Speed</h3>
+                <p class="game-desc">10 seconds. Click as fast as you can. CPS king?</p>
+              </div>
+              <span class="game-icon game-icon-emerald" aria-hidden="true">🖱️</span>
+            </div>
+            <div class="game-stats">
+              <span class="stat"><span class="stat-value mono" id="click-best">—</span> CPS best</span>
+              <span class="stat"><span class="stat-value mono" id="click-plays">0</span> plays</span>
+            </div>
+          </article>
+
+          <!-- Number Guess -->
+          <article class="card card-interactive game-card" role="listitem" onclick="openGame('guess')" tabindex="0" onkeydown="handleCardKeydown(event, 'guess')">
+            <div class="game-card-header">
+              <div>
+                <h3 class="game-title">Number Guess</h3>
+                <p class="game-desc">1–100. I'm thinking of a number. How many tries?</p>
+              </div>
+              <span class="game-icon game-icon-violet" aria-hidden="true">🎯</span>
+            </div>
+            <div class="game-stats">
+              <span class="stat"><span class="stat-value mono" id="guess-best">—</span> guesses best</span>
+              <span class="stat"><span class="stat-value mono" id="guess-plays">0</span> plays</span>
+            </div>
+          </article>
+
+          <!-- Whack Game -->
+          <article class="card card-interactive game-card" role="listitem" onclick="openGame('whack')" tabindex="0" onkeydown="handleCardKeydown(event, 'whack')">
+            <div class="game-card-header">
+              <div>
+                <h3 class="game-title">Whack-a-Mole</h3>
+                <p class="game-desc">30 seconds. Hit the targets. Don't miss.</p>
+              </div>
+              <span class="game-icon game-icon-rose" aria-hidden="true">🔨</span>
+            </div>
+            <div class="game-stats">
+              <span class="stat"><span class="stat-value mono" id="whack-best">—</span> hits best</span>
+              <span class="stat"><span class="stat-value mono" id="whack-plays">0</span> plays</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <p>Built for timepass. No tracking, no accounts, no nonsense.</p>
+      <p class="mt-1">Press <kbd style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem;">Esc</kbd> to close any game. <kbd style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem;">Space</kbd> / <kbd style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem;">Enter</kbd> to play.</p>
+    </div>
+  </footer>
+
+  <!-- ===== MODAL OVERLAY ===== -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div class="modal" role="document">
+      <header class="modal-header">
+        <h2 id="modalTitle" class="modal-title">Game</h2>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close game">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </header>
+      <div class="modal-body" id="modalBody"></div>
+      <footer class="modal-footer" id="modalFooter"></footer>
+    </div>
+  </div>
+
+  <!-- ===== GAME LOGIC ===== -->
+  <script>
+    // ===== STATE MANAGEMENT =====
+    const state = {
+      sessionStart: Date.now(),
+      stats: {
+        reaction: { best: null, plays: 0, times: [] },
+        memory: { best: 0, plays: 0 },
+        clickspeed: { best: 0, plays: 0 },
+        guess: { best: null, plays: 0 },
+        whack: { best: 0, plays: 0 }
+      },
+      currentGame: null,
+      gameTimers: {}
+    };
+
+    // Load from localStorage
+    function loadStats() {
+      try {
+        const saved = localStorage.getItem('timepass-arcade-stats');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.assign(state.stats, parsed);
+        }
+      } catch (e) { console.warn('Could not load stats'); }
+      renderStats();
+    }
+
+    function saveStats() {
+      try {
+        localStorage.setItem('timepass-arcade-stats', JSON.stringify(state.stats));
+      } catch (e) { console.warn('Could not save stats'); }
+    }
+
+    function formatTime(ms) {
+      if (ms < 1000) return `${ms}ms`;
+      if (ms < 60000) return `${(ms/1000).toFixed(1)}s`;
+      const mins = Math.floor(ms/60000);
+      const secs = Math.floor((ms%60000)/1000);
+      return `${mins}m ${secs}s`;
+    }
+
+    function renderStats() {
+      // Header stats
+      const totalPlays = Object.values(state.stats).reduce((sum, s) => sum + s.plays, 0);
+      const totalTime = Date.now() - state.sessionStart;
+      document.getElementById('totalGamesPlayed').textContent = totalPlays;
+      document.getElementById('totalTimePlayed').textContent = formatTime(totalTime);
+
+      const bests = [];
+      if (state.stats.reaction.best) bests.push(`${state.stats.reaction.best}ms`);
+      if (state.stats.memory.best) bests.push(`L${state.stats.memory.best}`);
+      if (state.stats.clickspeed.best) bests.push(`${state.stats.clickspeed.best.toFixed(1)}cps`);
+      if (state.stats.guess.best) bests.push(`${state.stats.guess.best}g`);
+      if (state.stats.whack.best) bests.push(`${state.stats.whack.best}h`);
+      document.getElementById('bestScores').textContent = bests.join(' • ') || '—';
+
+      // Game cards
+      if (state.stats.reaction.best) document.getElementById('reaction-best').textContent = state.stats.reaction.best;
+      document.getElementById('reaction-plays').textContent = state.stats.reaction.plays;
+
+      if (state.stats.memory.best) document.getElementById('memory-best').textContent = state.stats.memory.best;
+      document.getElementById('memory-plays').textContent = state.stats.memory.plays;
+
+      if (state.stats.clickspeed.best) document.getElementById('click-best').textContent = state.stats.clickspeed.best.toFixed(1);
+      document.getElementById('click-plays').textContent = state.stats.clickspeed.plays;
+
+      if (state.stats.guess.best) document.getElementById('guess-best').textContent = state.stats.guess.best;
+      document.getElementById('guess-plays').textContent = state.stats.guess.plays;
+
+      if (state.stats.whack.best) document.getElementById('whack-best').textContent = state.stats.whack.best;
+      document.getElementById('whack-plays').textContent = state.stats.whack.plays;
+    }
+
+    // ===== MODAL HANDLING =====
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+    const modalTitle = document.getElementById('modalTitle');
+
+    function openGame(gameId) {
+      state.currentGame = gameId;
+      modalOverlay.hidden = false;
+      requestAnimationFrame(() => modalOverlay.classList.add('active'));
+      document.body.style.overflow = 'hidden';
+
+      const configs = {
+        reaction: { title: 'Reaction Time', icon: '⚡', render: renderReactionGame },
+        memory: { title: 'Sequence Memory', icon: '🧠', render: renderMemoryGame },
+        clickspeed: { title: 'Click Speed', icon: '🖱️', render: renderClickSpeedGame },
+        guess: { title: 'Number Guess', icon: '🎯', render: renderGuessGame },
+        whack: { title: 'Whack-a-Mole', icon: '🔨', render: renderWhackGame }
+      };
+
+      const config = configs[gameId];
+      modalTitle.textContent = `${config.icon} ${config.title}`;
+      modalBody.innerHTML = '';
+      modalFooter.innerHTML = '';
+      config.render();
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      setTimeout(() => {
+        modalOverlay.hidden = true;
+        document.body.style.overflow = '';
+        cleanupCurrentGame();
+      }, 300);
+    }
+
+    function cleanupCurrentGame() {
+      Object.values(state.gameTimers).forEach(t => clearTimeout(t));
+      state.gameTimers = {};
+      state.currentGame = null;
+    }
+
+    // Close on overlay click
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modalOverlay.hidden) closeModal();
+    });
+
+    // Card keyboard handling
+    function handleCardKeydown(e, gameId) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openGame(gameId);
+      }
+    }
+
+    // ===== GAME 1: REACTION TIME =====
+    let reactionState = { phase: 'idle', startTime: 0, attempts: [], timeoutId: null };
+
+    function renderReactionGame() {
+      reactionState = { phase: 'idle', startTime: 0, attempts: [], timeoutId: null };
+      modalBody.innerHTML = `
+        <div class="text-center">
+          <p class="text-muted mb-3">Click to start. Wait for the box to turn <strong style="color: var(--accent-emerald)">green</strong>, then click as fast as you can.</p>
+          <div class="reaction-area waiting" id="reactionArea" data-text="Click to start" role="button" tabindex="0" aria-label="Reaction test area"></div>
+          <div class="reaction-history" id="reactionHistory" aria-live="polite"></div>
+          <p class="text-muted mt-2 body-sm">5 attempts. Your best time counts.</p>
+        </div>
+      `;
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary btn-full" onclick="resetReactionGame()">Reset</button>
+      `;
+
+      const area = document.getElementById('reactionArea');
+      area.addEventListener('click', handleReactionClick);
+      area.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleReactionClick(); } });
+      startReactionRound();
+    }
+
+    function startReactionRound() {
+      if (reactionState.attempts.length >= 5) return finishReactionGame();
+
+      reactionState.phase = 'waiting';
+      const area = document.getElementById('reactionArea');
+      area.className = 'reaction-area waiting';
+      area.setAttribute('data-text', 'Wait for green...');
+
+      const delay = 1500 + Math.random() * 2500;
+      reactionState.timeoutId = setTimeout(() => {
+        if (reactionState.phase !== 'waiting') return;
+        reactionState.phase = 'ready';
+        reactionState.startTime = performance.now();
+        area.className = 'reaction-area ready';
+        area.setAttribute('data-text', 'CLICK!');
+      }, delay);
+      state.gameTimers.reaction = reactionState.timeoutId;
+    }
+
+    function handleReactionClick() {
+      const area = document.getElementById('reactionArea');
+
+      if (reactionState.phase === 'waiting') {
+        // Too early
+        clearTimeout(reactionState.timeoutId);
+        reactionState.phase = 'early';
+        area.className = 'reaction-area clicked';
+        area.setAttribute('data-result', 'Too early!');
+        area.setAttribute('data-text', 'Too early!');
+        recordReactionAttempt('early', null);
+        setTimeout(startReactionRound, 1500);
+      } else if (reactionState.phase === 'ready') {
+        // Good click
+        const reactionTime = Math.round(performance.now() - reactionState.startTime);
+        reactionState.phase = 'clicked';
+        area.className = 'reaction-area clicked';
+        area.setAttribute('data-result', `${reactionTime}ms`);
+        area.setAttribute('data-text', `${reactionTime}ms`);
+        recordReactionAttempt('hit', reactionTime);
+        setTimeout(startReactionRound, 1500);
+      } else if (reactionState.phase === 'idle') {
+        // Start game
+        startReactionRound();
+      }
+    }
+
+    function recordReactionAttempt(type, time) {
+      reactionState.attempts.push({ type, time });
+      const history = document.getElementById('reactionHistory');
+      const item = document.createElement('span');
+      item.className = `reaction-item ${type === 'hit' ? (time < 200 ? 'good' : time < 300 ? 'ok' : 'slow') : type}`;
+      item.textContent = type === 'hit' ? `${time}ms` : type === 'early' ? 'Too early' : 'Missed';
+      history.appendChild(item);
+    }
+
+    function finishReactionGame() {
+      const hits = reactionState.attempts.filter(a => a.type === 'hit');
+      let best = null;
+      if (hits.length > 0) {
+        best = Math.min(...hits.map(a => a.time));
+        state.stats.reaction.best = state.stats.reaction.best ? Math.min(state.stats.reaction.best, best) : best;
+      }
+      state.stats.reaction.plays++;
+      state.stats.reaction.times.push(...hits.map(a => a.time));
+      saveStats();
+      renderStats();
+
+      const area = document.getElementById('reactionArea');
+      area.className = 'reaction-area waiting';
+      area.setAttribute('data-text', hits.length ? `Done! Best: ${best}ms` : 'No hits. Click to retry.');
+
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary" onclick="resetReactionGame()">Play Again</button>
+        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+      `;
+    }
+
+    function resetReactionGame() {
+      clearTimeout(reactionState.timeoutId);
+      renderReactionGame();
+    }
+
+    // ===== GAME 2: MEMORY =====
+    let memoryState = { level: 1, sequence: [], playerSequence: [], phase: 'showing', tiles: [] };
+
+    function renderMemoryGame() {
+      memoryState = { level: 1, sequence: [], playerSequence: [], phase: 'showing', tiles: [] };
+      modalBody.innerHTML = `
+        <div class="text-center">
+          <div class="memory-info">
+            <span>Level: <strong id="memoryLevel">1</strong></span>
+            <span>Best: <strong id="memoryBest">${state.stats.memory.best || '—'}</strong></span>
+          </div>
+          <div class="memory-grid" id="memoryGrid" role="grid" aria-label="Memory game grid"></div>
+          <p class="text-muted mt-2 body-sm" id="memoryStatus">Watch the pattern...</p>
+          <div class="memory-level" id="memoryLevelDisplay"></div>
+        </div>
+      `;
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary btn-full" onclick="resetMemoryGame()">Restart</button>
+      `;
+      createMemoryGrid();
+      nextMemoryRound();
+    }
+
+    function createMemoryGrid() {
+      const grid = document.getElementById('memoryGrid');
+      grid.innerHTML = '';
+      const symbols = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G'];
+      memoryState.tiles = symbols.slice(0, 16).sort(() => Math.random() - 0.5);
+
+      memoryState.tiles.forEach((symbol, i) => {
+        const tile = document.createElement('button');
+        tile.className = 'memory-tile';
+        tile.setAttribute('role', 'gridcell');
+        tile.setAttribute('tabindex', '0');
+        tile.setAttribute('aria-label', `Tile ${i + 1}`);
+        tile.innerHTML = `<span class="tile-value">${symbol}</span>`;
+        tile.dataset.index = i;
+        tile.dataset.symbol = symbol;
+        tile.addEventListener('click', () => handleMemoryTileClick(i));
+        tile.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleMemoryTileClick(i); } });
+        grid.appendChild(tile);
+      });
+    }
+
+    function nextMemoryRound() {
+      memoryState.phase = 'showing';
+      memoryState.playerSequence = [];
+      document.getElementById('memoryLevel').textContent = memoryState.level;
+      document.getElementById('memoryStatus').textContent = 'Watch the pattern...';
+
+      // Add new symbol to sequence
+      const available = memoryState.tiles.filter((_, i) => !memoryState.sequence.includes(i));
+      const newIdx = available[Math.floor(Math.random() * available.length)];
+      memoryState.sequence.push(newIdx);
+
+      playMemorySequence(0);
+    }
+
+    function playMemorySequence(step) {
+      if (step >= memoryState.sequence.length) {
+        memoryState.phase = 'playing';
+        document.getElementById('memoryStatus').textContent = 'Your turn! Repeat the pattern.';
+        return;
+      }
+
+      const idx = memoryState.sequence[step];
+      const tile = document.querySelector(`[data-index="${idx}"]`);
+      if (tile) {
+        tile.classList.add('flipped');
+        setTimeout(() => {
+          tile.classList.remove('flipped');
+          setTimeout(() => playMemorySequence(step + 1), 200);
+        }, 600);
+      }
+    }
+
+    function handleMemoryTileClick(idx) {
+      if (memoryState.phase !== 'playing') return;
+
+      const tile = document.querySelector(`[data-index="${idx}"]`);
+      const expectedIdx = memoryState.sequence[memoryState.playerSequence.length];
+
+      if (idx === expectedIdx) {
+        tile.classList.add('flipped');
+        memoryState.playerSequence.push(idx);
+
+        if (memoryState.playerSequence.length === memoryState.sequence.length) {
+          // Level complete
+          memoryState.level++;
+          setTimeout(() => {
+            document.querySelectorAll('.memory-tile.flipped').forEach(t => t.classList.remove('flipped'));
+            nextMemoryRound();
+          }, 500);
+        }
+      } else {
+        // Wrong!
+        tile.classList.add('wrong');
+        memoryState.phase = 'gameover';
+        document.getElementById('memoryStatus').textContent = `Game Over! You reached level ${memoryState.level - 1}`;
+        setTimeout(() => tile.classList.remove('wrong'), 400);
+        endMemoryGame();
+      }
+    }
+
+    function endMemoryGame() {
+      const finalLevel = memoryState.level - 1;
+      if (finalLevel > state.stats.memory.best) {
+        state.stats.memory.best = finalLevel;
+      }
+      state.stats.memory.plays++;
+      saveStats();
+      renderStats();
+
+      document.querySelectorAll('.memory-tile').forEach(t => t.disabled = true);
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary" onclick="resetMemoryGame()">Play Again</button>
+        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+      `;
+    }
+
+    function resetMemoryGame() {
+      renderMemoryGame();
+    }
+
+    // ===== GAME 3: CLICK SPEED =====
+    let clickState = { clicks: 0, startTime: 0, active: false, timerId: null, duration: 10000 };
+
+    function renderClickSpeedGame() {
+      clickState = { clicks: 0, startTime: 0, active: false, timerId: null, duration: 10000 };
+      modalBody.innerHTML = `
+        <div class="text-center">
+          <p class="text-muted mb-2">Click the target as fast as you can for 10 seconds.</p>
+          <div class="click-timer mono" id="clickTimer">10.0</div>
+          <button class="click-target" id="clickTarget" aria-label="Click target" tabindex="0">0</button>
+          <p class="click-cps" id="clickCPS">CPS: 0.0</p>
+        </div>
+      `;
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary btn-full" onclick="resetClickGame()">Reset</button>
+      `;
+
+      const target = document.getElementById('clickTarget');
+      target.addEventListener('click', handleClick);
+      target.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleClick(); } });
+    }
+
+    function handleClick() {
+      if (!clickState.active) {
+        clickState.active = true;
+        clickState.startTime = performance.now();
+        clickState.clicks = 0;
+        document.getElementById('clickTarget').classList.add('active');
+        startClickTimer();
+      }
+
+      if (clickState.active) {
+        clickState.clicks++;
+        document.getElementById('clickTarget').textContent = clickState.clicks;
+        updateClickCPS();
+      }
+    }
+
+    function startClickTimer() {
+      const updateTimer = () => {
+        const elapsed = performance.now() - clickState.startTime;
+        const remaining = Math.max(0, clickState.duration - elapsed);
+        document.getElementById('clickTimer').textContent = (remaining / 1000).toFixed(1);
+        updateClickCPS();
+
+        if (remaining > 0) {
+          clickState.timerId = requestAnimationFrame(updateTimer);
+        } else {
+          endClickGame();
+        }
+      };
+      clickState.timerId = requestAnimationFrame(updateTimer);
+      state.gameTimers.clickspeed = clickState.timerId;
+    }
+
+    function updateClickCPS() {
+      const elapsed = (performance.now() - clickState.startTime) / 1000;
+      const cps = elapsed > 0 ? clickState.clicks / elapsed : 0;
+      document.getElementById('clickCPS').textContent = `CPS: ${cps.toFixed(1)}`;
+    }
+
+    function endClickGame() {
+      clickState.active = false;
+      cancelAnimationFrame(clickState.timerId);
+      document.getElementById('clickTarget').classList.remove('active');
+
+      const finalCPS = clickState.clicks / (clickState.duration / 1000);
+      if (finalCPS > state.stats.clickspeed.best) {
+        state.stats.clickspeed.best = finalCPS;
+      }
+      state.stats.clickspeed.plays++;
+      saveStats();
+      renderStats();
+
+      document.getElementById('clickTarget').textContent = 'Done!';
+      document.getElementById('clickTimer').textContent = '0.0';
+      document.getElementById('clickCPS').textContent = `Final: ${finalCPS.toFixed(1)} CPS`;
+
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary" onclick="resetClickGame()">Play Again</button>
+        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+      `;
+    }
+
+    function resetClickGame() {
+      cancelAnimationFrame(clickState.timerId);
+      renderClickSpeedGame();
+    }
+
+    // ===== GAME 4: NUMBER GUESS =====
+    let guessState = { target: 0, attempts: 0, min: 1, max: 100, history: [], gameOver: false };
+
+    function renderGuessGame() {
+      guessState = { target: Math.floor(Math.random() * 100) + 1, attempts: 0, min: 1, max: 100, history: [], gameOver: false };
+      modalBody.innerHTML = `
+        <div class="text-center">
+          <p class="text-muted mb-3">I'm thinking of a number between <strong>1</strong> and <strong>100</strong>.</p>
+          <div class="guess-input-group">
+            <input type="number" class="guess-input" id="guessInput" min="1" max="100" placeholder="Your guess" aria-label="Enter your guess" autocomplete="off">
+          </div>
+          <div class="guess-feedback" id="guessFeedback" aria-live="polite"></div>
+          <div class="guess-history" id="guessHistory" aria-label="Previous guesses"></div>
+          <p class="text-muted mt-2 body-sm">Range: <span id="guessRange">1–100</span></p>
+        </div>
+      `;
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary btn-full" onclick="resetGuessGame()">New Game</button>
+      `;
+
+      const input = document.getElementById('guessInput');
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') makeGuess(); });
+      input.focus();
+    }
+
+    function makeGuess() {
+      if (guessState.gameOver) return;
+
+      const input = document.getElementById('guessInput');
+      const value = parseInt(input.value);
+
+      if (isNaN(value) || value < guessState.min || value > guessState.max) {
+        input.value = '';
+        input.focus();
+        return;
+      }
+
+      guessState.attempts++;
+      guessState.history.push(value);
+
+      const feedback = document.getElementById('guessFeedback');
+      const history = document.getElementById('guessHistory');
+
+      if (value === guessState.target) {
+        guessState.gameOver = true;
+        feedback.textContent = `🎉 Correct! Got it in ${guessState.attempts} guess${guessState.attempts !== 1 ? 'es' : ''}!`;
+        feedback.className = 'guess-feedback correct';
+
+        if (!state.stats.guess.best || guessState.attempts < state.stats.guess.best) {
+          state.stats.guess.best = guessState.attempts;
+        }
+        state.stats.guess.plays++;
+        saveStats();
+        renderStats();
+
+        input.disabled = true;
+        modalFooter.innerHTML = `
+          <button class="btn btn-secondary" onclick="resetGuessGame()">Play Again</button>
+          <button class="btn btn-primary" onclick="closeModal()">Close</button>
+        `;
+      } else if (value < guessState.target) {
+        guessState.min = Math.max(guessState.min, value + 1);
+        feedback.textContent = `⬆ Higher! Try ${guessState.min}–${guessState.max}`;
+        feedback.className = 'guess-feedback low';
+        const chip = document.createElement('span');
+        chip.className = 'guess-chip low';
+        chip.textContent = value;
+        history.appendChild(chip);
+      } else {
+        guessState.max = Math.min(guessState.max, value - 1);
+        feedback.textContent = `⬇ Lower! Try ${guessState.min}–${guessState.max}`;
+        feedback.className = 'guess-feedback high';
+        const chip = document.createElement('span');
+        chip.className = 'guess-chip high';
+        chip.textContent = value;
+        history.appendChild(chip);
+      }
+
+      document.getElementById('guessRange').textContent = `${guessState.min}–${guessState.max}`;
+      input.value = '';
+      input.focus();
+    }
+
+    function resetGuessGame() {
+      renderGuessGame();
+    }
+
+    // ===== GAME 5: WHACK-A-MOLE =====
+    let whackState = { score: 0, timeLeft: 30, active: false, timerId: null, moleTimerId: null, holes: [], moleIndex: -1 };
+
+    function renderWhackGame() {
+      whackState = { score: 0, timeLeft: 30, active: false, timerId: null, moleTimerId: null, holes: [], moleIndex: -1 };
+      modalBody.innerHTML = `
+        <div class="text-center">
+          <div class="whack-score">
+            <div class="whack-time mono" id="whackTimer">30</div>
+            <div class="whack-hits">Hits: <strong id="whackHits">0</strong> | Best: <strong id="whackBestDisplay">${state.stats.whack.best || '—'}</strong></div>
+          </div>
+          <div class="whack-grid" id="whackGrid" role="grid" aria-label="Whack-a-mole grid"></div>
+          <p class="text-muted mt-2 body-sm" id="whackStatus">Click Start to begin</p>
+        </div>
+      `;
+      modalFooter.innerHTML = `
+        <button class="btn btn-primary btn-full" id="whackStartBtn" onclick="startWhackGame()">Start Game</button>
+      `;
+
+      createWhackGrid();
+    }
+
+    function createWhackGrid() {
+      const grid = document.getElementById('whackGrid');
+      grid.innerHTML = '';
+      whackState.holes = [];
+
+      for (let i = 0; i < 6; i++) {
+        const hole = document.createElement('div');
+        hole.className = 'whack-hole';
+        hole.setAttribute('role', 'gridcell');
+        hole.setAttribute('tabindex', '0');
+        hole.setAttribute('aria-label', `Hole ${i + 1}`);
+        hole.innerHTML = `<div class="whack-mole" aria-hidden="true">🎯</div>`;
+        hole.dataset.index = i;
+        hole.addEventListener('click', () => handleWhackHole(i));
+        hole.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleWhackHole(i); } });
+        grid.appendChild(hole);
+        whackState.holes.push(hole);
+      }
+    }
+
+    function startWhackGame() {
+      whackState.active = true;
+      whackState.score = 0;
+      whackState.timeLeft = 30;
+      document.getElementById('whackHits').textContent = '0';
+      document.getElementById('whackTimer').textContent = '30';
+      document.getElementById('whackStatus').textContent = 'Whack the targets!';
+      document.getElementById('whackStartBtn').disabled = true;
+      document.getElementById('whackStartBtn').textContent = 'Playing...';
+
+      whackState.timerId = setInterval(() => {
+        whackState.timeLeft--;
+        document.getElementById('whackTimer').textContent = whackState.timeLeft;
+        if (whackState.timeLeft <= 0) endWhackGame();
+      }, 1000);
+      state.gameTimers.whack = whackState.timerId;
+
+      spawnMole();
+    }
+
+    function spawnMole() {
+      if (!whackState.active) return;
+
+      // Hide current mole
+      if (whackState.moleIndex >= 0) {
+        whackState.holes[whackState.moleIndex].classList.remove('active');
+      }
+
+      // Pick new hole
+      whackState.moleIndex = Math.floor(Math.random() * whackState.holes.length);
+      whackState.holes[whackState.moleIndex].classList.add('active');
+      whackState.holes[whackState.moleIndex].classList.remove('hit');
+
+      // Random duration 0.8-1.5s
+      const duration = 800 + Math.random() * 700;
+      whackState.moleTimerId = setTimeout(() => {
+        if (whackState.active) {
+          whackState.holes[whackState.moleIndex].classList.remove('active');
+          setTimeout(spawnMole, 200 + Math.random() * 400);
+        }
+      }, duration);
+    }
+
+    function handleWhackHole(idx) {
+      if (!whackState.active || idx !== whackState.moleIndex) return;
+
+      const hole = whackState.holes[idx];
+      hole.classList.remove('active');
+      hole.classList.add('hit');
+      whackState.score++;
+      document.getElementById('whackHits').textContent = whackState.score;
+
+      clearTimeout(whackState.moleTimerId);
+      setTimeout(() => {
+        hole.classList.remove('hit');
+        if (whackState.active) {
+          setTimeout(spawnMole, 100 + Math.random() * 300);
+        }
+      }, 150);
+    }
+
+    function endWhackGame() {
+      whackState.active = false;
+      clearInterval(whackState.timerId);
+      clearTimeout(whackState.moleTimerId);
+
+      if (whackState.moleIndex >= 0) {
+        whackState.holes[whackState.moleIndex].classList.remove('active');
+      }
+
+      if (whackState.score > state.stats.whack.best) {
+        state.stats.whack.best = whackState.score;
+      }
+      state.stats.whack.plays++;
+      saveStats();
+      renderStats();
+
+      document.getElementById('whackStatus').textContent = `Time's up! You got ${whackState.score} hit${whackState.score !== 1 ? 's' : ''}!`;
+      document.getElementById('whackStartBtn').disabled = false;
+      document.getElementById('whackStartBtn').textContent = 'Play Again';
+      document.getElementById('whackStartBtn').className = 'btn btn-secondary btn-full';
+      document.getElementById('whackStartBtn').onclick = resetWhackGame;
+
+      modalFooter.innerHTML = `
+        <button class="btn btn-secondary" onclick="resetWhackGame()">Play Again</button>
+        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+      `;
+    }
+
+    function resetWhackGame() {
+      clearInterval(whackState.timerId);
+      clearTimeout(whackState.moleTimerId);
+      renderWhackGame();
+    }
+
+    // ===== INIT =====
+    loadStats();
+
+    // Expose functions globally for inline handlers
+    window.openGame = openGame;
+    window.closeModal = closeModal;
+    window.handleCardKeydown = handleCardKeydown;
+    window.resetReactionGame = resetReactionGame;
+    window.resetMemoryGame = resetMemoryGame;
+    window.resetClickGame = resetClickGame;
+    window.resetGuessGame = resetGuessGame;
+    window.resetWhackGame = resetWhackGame;
+    window.startWhackGame = startWhackGame;
+    window.makeGuess = makeGuess;
+  </script>
+</body>
+</html>
